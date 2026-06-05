@@ -8,6 +8,11 @@
 import * as THREE from '../extern/build/three.module.js';
 import * as GUIVR from './GuiVR.js';
 
+// Optional callback invoked on platform click in non-VR mode.
+// Set via setPreviewPlatformHandler() from main.js.
+var previewPlatformHandler = null;
+export function setPreviewPlatformHandler(fn) { previewPlatformHandler = fn; }
+
 export class UserRig extends THREE.Group {
 
   constructor(camera, xr){
@@ -137,7 +142,13 @@ export class UserPlatform extends GUIVR.GuiVR {
 
 
     collide(uv, pt){
-	// When the user clicks on this platform, move the user to it.
+	// In non-VR mode, delegate to the preview camera handler.
+	if (previewPlatformHandler && !this.userRig.xr.isPresenting()) {
+	    previewPlatformHandler(this);
+	    return;
+	}
+
+	// When the user clicks on this platform in VR, move the user to it.
 	let parent = this.userRig.parent;
 	if (parent != undefined && (parent instanceof UserPlatform)){
 	    if (parent.onLeave != undefined){

@@ -548,6 +548,34 @@ function init() {
     // Create the contents of the room.
     initExhibits(userRig);
 
+    // When a platform is clicked in non-VR mode, orbit to a standing view
+    // facing the exhibit rather than teleporting the VR rig.
+    USER.setPreviewPlatformHandler(function(platform) {
+        var worldPos = new THREE.Vector3();
+        platform.getWorldPosition(worldPos);
+
+        var worldQuat = new THREE.Quaternion();
+        platform.getWorldQuaternion(worldQuat);
+
+        // Platform's local forward is -z.
+        var forward = new THREE.Vector3(0, 0, -1).applyQuaternion(worldQuat);
+
+        // Place the virtual eye at standing height above the platform.
+        var dist = 8;
+        var eyeY = worldPos.y + 1.6;
+
+        // Set orbit target 'dist' units ahead of the eye along forward.
+        previewOrbit.target.set(
+            worldPos.x + forward.x * dist,
+            eyeY      + forward.y * dist,
+            worldPos.z + forward.z * dist
+        );
+        previewOrbit.radius = dist;
+        previewOrbit.phi    = Math.PI / 2;
+        previewOrbit.theta  = Math.atan2(-forward.x, -forward.z);
+        updatePreviewCamera();
+    });
+
     // Add VR button.
     document.body.appendChild(VRButton.createButton(renderer));
     window.addEventListener('resize', onWindowResize, false);
