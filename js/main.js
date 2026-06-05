@@ -437,6 +437,8 @@ function onPreviewMouseDown(event) {
     if (renderer.xr.isPresenting()) return;
     previewOrbit.isDragging = true;
     previewOrbit.didDrag = false;
+    previewOrbit.startX = event.clientX;
+    previewOrbit.startY = event.clientY;
     previewOrbit.lastX = event.clientX;
     previewOrbit.lastY = event.clientY;
 }
@@ -445,12 +447,19 @@ function onPreviewMouseMove(event) {
     if (!previewOrbit.isDragging || renderer.xr.isPresenting()) return;
     var dx = event.clientX - previewOrbit.lastX;
     var dy = event.clientY - previewOrbit.lastY;
-    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) previewOrbit.didDrag = true;
+    previewOrbit.lastX = event.clientX;
+    previewOrbit.lastY = event.clientY;
+    // Only commit to a drag once total displacement exceeds 6px, so
+    // normal click tremor doesn't move the camera or suppress the click.
+    if (!previewOrbit.didDrag) {
+        var totalDx = event.clientX - previewOrbit.startX;
+        var totalDy = event.clientY - previewOrbit.startY;
+        if (Math.abs(totalDx) < 6 && Math.abs(totalDy) < 6) return;
+        previewOrbit.didDrag = true;
+    }
     previewOrbit.theta -= dx * 0.005;
     previewOrbit.phi -= dy * 0.005;
     previewOrbit.phi = Math.max(0.05, Math.min(Math.PI - 0.05, previewOrbit.phi));
-    previewOrbit.lastX = event.clientX;
-    previewOrbit.lastY = event.clientY;
     updatePreviewCamera();
 }
 
