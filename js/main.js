@@ -560,17 +560,19 @@ function init() {
         // Platform's local forward is -z.
         var forward = new THREE.Vector3(0, 0, -1).applyQuaternion(worldQuat);
 
-        // Place the virtual eye at standing height above the platform.
-        var dist = 8;
         var eyeY = worldPos.y + 1.6;
 
-        // Set orbit target 'dist' units ahead of the eye along forward.
+        // Pull the camera 5 units behind the platform and pivot 5 units
+        // in front of it, giving enough distance to read the instructions
+        // comfortably regardless of which game's platform was clicked.
+        var backDist    = 5;
+        var forwardDist = 5;
         previewOrbit.target.set(
-            worldPos.x + forward.x * dist,
-            eyeY      + forward.y * dist,
-            worldPos.z + forward.z * dist
+            worldPos.x + forward.x * forwardDist,
+            eyeY      + forward.y * forwardDist,
+            worldPos.z + forward.z * forwardDist
         );
-        previewOrbit.radius = dist;
+        previewOrbit.radius = backDist + forwardDist;
         previewOrbit.phi    = Math.PI / 2;
         previewOrbit.theta  = Math.atan2(-forward.x, -forward.z);
         updatePreviewCamera();
