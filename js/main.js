@@ -20,6 +20,7 @@ import {FBXLoader}  from '../extern/examples/jsm/loaders/FBXLoader.js';
 var camera, scene, renderer;
 var userRig; // rig to move the user
 var animatedObjects = []; // List of objects whose animation function needs to be called each frame.
+var clickableBoxes = []; // Non-VR clickable boxes: [{mesh, click}]
 
 // Preview mode orbit state (used when no VR session is active).
 var previewOrbit = {
@@ -43,16 +44,19 @@ function initMovingBlocks(userRig)
   game1.position.x = -10;
   scene.add(game1);
   animatedObjects.push(game1);
+  game1.boxes.forEach(function(b) { clickableBoxes.push(b); });
   game2.rotateY(THREE.Math.degToRad(360));
   game2.position.z = -15;
   game2.position.x = 20;
   scene.add(game2);
   animatedObjects.push(game2);
+  game2.boxes.forEach(function(b) { clickableBoxes.push(b); });
   game3.rotateY(THREE.Math.degToRad(360));
   game3.position.z = -18;
   game3.position.x = 0;
   scene.add(game3);
   animatedObjects.push(game3);
+  game3.boxes.forEach(function(b) { clickableBoxes.push(b); });
 }
 
 function initFlyingSaucer(userRig)
@@ -584,6 +588,19 @@ function onSelectStart(event){
 
 	// Register the click into the GUI.
 	GUIVR.intersectObjects(raycaster);
+
+	// Test for clicks on moving boxes.
+	var boxMeshes = clickableBoxes.map(function(b) { return b.mesh; });
+	var boxHits = raycaster.intersectObjects(boxMeshes, false);
+	if (boxHits.length > 0) {
+	    var hitMesh = boxHits[0].object;
+	    for (var i = 0; i < clickableBoxes.length; i++) {
+		if (clickableBoxes[i].mesh === hitMesh) {
+		    clickableBoxes[i].click();
+		    break;
+		}
+	    }
+	}
     }
 
 }

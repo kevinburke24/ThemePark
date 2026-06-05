@@ -176,14 +176,39 @@ export class movingBlocks extends THREE.Group {
     this.add(box3);
     this.add(box4);
 
-    //let negShift1 = -this.speed;
-    //let posShift1 = this.speed;
-    //let negShift2 = -this.speed;
-    //let posShift2 = this.speed;
     var stop1 = false;
     var stop2 = false;
     var stop3 = false;
     var stop4 = false;
+
+    // Expose boxes so non-VR mouse clicks can stop them.
+    function stopBox(index) {
+        var stops = [stop1, stop2, stop3, stop4];
+        if (stops[index]) return;
+        if (index === 0) stop1 = true;
+        else if (index === 1) stop2 = true;
+        else if (index === 2) stop3 = true;
+        else if (index === 3) stop4 = true;
+        if (hasWon()) {
+            scoreBoard.clear();
+            writeScore("YOU WIN");
+            return;
+        }
+        if (stop1 && stop2 && stop3 && stop4) {
+            scoreBoard.clear();
+            writeScore("YOU LOST");
+            return;
+        }
+        score += 1;
+        scoreBoard.clear();
+        writeScore("You have halted " + score + " blocks");
+    }
+    this.boxes = [
+        { mesh: box1, click: function() { stopBox(0); } },
+        { mesh: box2, click: function() { stopBox(1); } },
+        { mesh: box3, click: function() { stopBox(2); } },
+        { mesh: box4, click: function() { stopBox(3); } },
+    ];
 
     let count = 75;
     box1.setAnimation(
@@ -241,7 +266,7 @@ export class movingBlocks extends THREE.Group {
       }
     );
 
-    leftController.setAnimation(
+    if (leftController) leftController.setAnimation(
       function(dt){
         if (this.triggered && ((this.position.x >= box1.position.x - 0.8 && this.position.x <= box1.position.x + 0.8))){
             console.log(this.position.z);
@@ -346,7 +371,7 @@ export class movingBlocks extends THREE.Group {
       }
     );
 
-    rightController.setAnimation(
+    if (rightController) rightController.setAnimation(
       function(dt){
         if (this.triggered && (this.position.x >= box1.position.x - 0.57 && this.position.x <= box1.position.x + 0.57)){
             stop1 = true;
