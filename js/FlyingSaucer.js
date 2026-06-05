@@ -1,7 +1,3 @@
-// Author: Kevin Burke
-// CSC 385 Computer Graphics
-// Version: Winter 2020
-// Project 2: Flying Saucer class
 // Initializes scene, VR system, and event handlers.
 
 import * as THREE from '../extern/build/three.module.js';

@@ -1,8 +1,3 @@
-// Author: Matthew Anderson
-// CSC 385 Computer Graphics
-// Version: Winter 2020
-// Project 2: Animator class
-//
 // A class called Animator that allows setting and stepping through
 // animations of objects.  This class is merged into with
 // Three.Object3D so that all objects in Threejs now have this

@@ -1,8 +1,3 @@
-// Author: Matthew Anderson
-// CSC 385 Computer Graphics
-// Version: Winter 2020
-// Project 2: User classes
-//
 // Classes to help move the user.  The class UserRig internalizes the
 // position of the VR headset and controllers.  Move the UserRig
 // object to cause the user to change positions in VR.  The class

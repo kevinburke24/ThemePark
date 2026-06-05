@@ -1,7 +1,3 @@
-// Author: Matthew Anderson
-// CSC 385 Computer Graphics
-// Version: Winter 2020
-// Project 2: Main program.
 // Initializes scene, VR system, and event handlers.
 
 import * as THREE from '../extern/build/three.module.js';
@@ -24,6 +20,18 @@ import {FBXLoader}  from '../extern/examples/jsm/loaders/FBXLoader.js';
 var camera, scene, renderer;
 var userRig; // rig to move the user
 var animatedObjects = []; // List of objects whose animation function needs to be called each frame.
+
+// Preview mode orbit state (used when no VR session is active).
+var previewOrbit = {
+    isDragging: false,
+    didDrag: false,
+    theta: 0,
+    phi: Math.PI / 3,
+    radius: 15,
+    target: new THREE.Vector3(0, 0, -10),
+    lastX: 0,
+    lastY: 0,
+};
 
 function initMovingBlocks(userRig)
 {
@@ -409,6 +417,53 @@ function initExhibit4(userRig){
     scene.add(exhibit);
 }
 
+// --- Preview mode (non-VR) orbit and zoom controls ---
+
+function updatePreviewCamera() {
+    var o = previewOrbit;
+    camera.position.set(
+        o.target.x + o.radius * Math.sin(o.phi) * Math.sin(o.theta),
+        o.target.y + o.radius * Math.cos(o.phi),
+        o.target.z + o.radius * Math.sin(o.phi) * Math.cos(o.theta)
+    );
+    camera.lookAt(o.target);
+}
+
+function onPreviewMouseDown(event) {
+    if (renderer.xr.isPresenting()) return;
+    previewOrbit.isDragging = true;
+    previewOrbit.didDrag = false;
+    previewOrbit.lastX = event.clientX;
+    previewOrbit.lastY = event.clientY;
+}
+
+function onPreviewMouseMove(event) {
+    if (!previewOrbit.isDragging || renderer.xr.isPresenting()) return;
+    var dx = event.clientX - previewOrbit.lastX;
+    var dy = event.clientY - previewOrbit.lastY;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) previewOrbit.didDrag = true;
+    previewOrbit.theta -= dx * 0.005;
+    previewOrbit.phi -= dy * 0.005;
+    previewOrbit.phi = Math.max(0.05, Math.min(Math.PI - 0.05, previewOrbit.phi));
+    previewOrbit.lastX = event.clientX;
+    previewOrbit.lastY = event.clientY;
+    updatePreviewCamera();
+}
+
+function onPreviewMouseUp() {
+    previewOrbit.isDragging = false;
+}
+
+function onPreviewWheel(event) {
+    if (renderer.xr.isPresenting()) return;
+    event.preventDefault();
+    previewOrbit.radius += event.deltaY * 0.02;
+    previewOrbit.radius = Math.max(2, Math.min(40, previewOrbit.radius));
+    updatePreviewCamera();
+}
+
+// --- End preview mode controls ---
+
 // Initialize THREE objects in the scene.
 function initExhibits(userRig){
 
@@ -487,6 +542,26 @@ function init() {
     // Set handler for mouse clicks.
     window.onclick = onSelectStart;
 
+    // Wire up preview orbit/zoom controls.
+    renderer.domElement.addEventListener('mousedown', onPreviewMouseDown);
+    window.addEventListener('mousemove', onPreviewMouseMove);
+    window.addEventListener('mouseup', onPreviewMouseUp);
+    renderer.domElement.addEventListener('wheel', onPreviewWheel, {passive: false});
+
+    // Hint overlay; hidden while a VR session is active.
+    var previewHint = document.createElement('div');
+    previewHint.textContent = 'Drag to orbit  •  Scroll to zoom';
+    previewHint.style.cssText =
+        'position:absolute;top:20px;left:50%;transform:translateX(-50%);' +
+        'color:#fff;font:normal 13px sans-serif;background:rgba(0,0,0,0.45);' +
+        'padding:6px 14px;border-radius:4px;pointer-events:none;';
+    document.body.appendChild(previewHint);
+    renderer.xr.addEventListener('sessionstart', function () { previewHint.style.display = 'none'; });
+    renderer.xr.addEventListener('sessionend',   function () { previewHint.style.display = ''; });
+
+    // Set initial preview camera position.
+    updatePreviewCamera();
+
     // Starts main rendering loop.
     renderer.setAnimationLoop(render);
 
@@ -497,6 +572,7 @@ function init() {
 function onSelectStart(event){
 
     if (event instanceof MouseEvent && !renderer.xr.isPresenting()){
+	if (previewOrbit.didDrag) return; // pointer was dragged, not a click
 	// Handle mouse click outside of VR.
 	// Determine screen coordinates of click.
 	var mouse = new THREE.Vector2();

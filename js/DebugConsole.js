@@ -1,7 +1,4 @@
-// Author: Matthew Anderson
-// CSC 385 Computer Graphics
-// Version: Winter 2020
-// Project 1: DebugConsole.
+// DebugConsole.
 // Debug tool, displays text outputs as GuiVR object.
 
 import * as THREE from '../extern/build/three.module.js';
