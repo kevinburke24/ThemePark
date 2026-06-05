@@ -9,6 +9,7 @@ import * as ANIMATOR from './Animator.js';
 import * as USER from './User.js';
 import * as BLOCKS from './MovingBlocks.js';
 import * as SAUCER from './FlyingSaucer.js';
+import * as STRIKER from './HighStriker.js';
 // Imports for model loading.  The import depends on the model file type.
 // There are other model types that can be loaded.
 import {FBXLoader}  from '../extern/examples/jsm/loaders/FBXLoader.js';
@@ -36,15 +37,15 @@ var previewOrbit = {
 
 function initMovingBlocks(userRig)
 {
-  var game1 = new BLOCKS.movingBlocks(userRig, 1, 1, 1, "hard");
+  // Left exhibit replaced by high striker
+  var striker = new STRIKER.HighStriker(userRig);
+  striker.position.z = -15;
+  striker.position.x = -10;
+  scene.add(striker);
+  animatedObjects.push(striker);
+
   var game2 = new BLOCKS.movingBlocks(userRig, 2, 1, 2, "easy");
   var game3 = new BLOCKS.movingBlocks(userRig, 1.5, 1.5, 1.5, "medium");
-  game1.rotateY(THREE.Math.degToRad(360));
-  game1.position.z = -15;
-  game1.position.x = -10;
-  scene.add(game1);
-  animatedObjects.push(game1);
-  game1.boxes.forEach(function(b) { clickableBoxes.push(b); });
   game2.rotateY(THREE.Math.degToRad(360));
   game2.position.z = -15;
   game2.position.x = 20;
