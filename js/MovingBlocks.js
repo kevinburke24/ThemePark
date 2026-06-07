@@ -45,25 +45,27 @@ export class movingBlocks extends THREE.Group {
     var buttons = [new GUIVR.GuiVRButton("Diff.", this.difficulty, 5, 8, true,
         function(x){speed1 = x/100; speed2 = x/100; speed3 = x/100; speed4 = x/100;})];
     var sign = new GUIVR.GuiVRMenu(buttons);
-    sign.position.x = 0;
-    sign.position.z = -2;
-    sign.position.y = 1;
+    // Place difficulty control to the left of the instructions board so it
+    // doesn't overlap the box game area.
+    // x=-2.5 (local, no scale compensation) lands in the gap between box1 (x:-4→-3)
+    // and box2 (x:-2→-1), so no box will ever cross the sign's x position.
+    sign.position.set(-2.5, 2.5 / scaleY, -3.0 / scaleZ);
+    sign.scale.set(1 / scaleX, 1 / scaleY, 1 / scaleZ);
     this.add(sign);
-    //user.add(sign);
     //Set up instructions board
     var instructionsBrd = new InstructionsBoard(2.5);
     debugConsoles.push(instructionsBrd);
     // Compensate for group scale so boards appear at consistent world-space
     // size and position regardless of per-instance scale (x/scaleX cancels
     // out when multiplied by group scale, giving a fixed world offset).
-    instructionsBrd.position.set(0, 2.0 / scaleY, -3.0 / scaleZ);
+    instructionsBrd.position.set(0, 2.5 / scaleY, -3.0 / scaleZ);
     instructionsBrd.scale.set(1 / scaleX, 1 / scaleY, 1 / scaleZ);
     this.add(instructionsBrd);
 
     var scoreBoard = new ScoreBoard(1.5);
     debugConsoles.push(scoreBoard);
     scoreBoard.rotateX(THREE.Math.degToRad(10));
-    scoreBoard.position.set(3.0 / scaleX, 2.0 / scaleY, -3.0 / scaleZ);
+    scoreBoard.position.set(3.0 / scaleX, 2.5 / scaleY, -3.0 / scaleZ);
     scoreBoard.scale.set(1 / scaleX, 1 / scaleY, 1 / scaleZ);
     this.add(scoreBoard);
     writeScore("You have halted " + score + " blocks");
