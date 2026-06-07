@@ -70,13 +70,11 @@ export class movingBlocks extends THREE.Group {
     this.add(scoreBoard);
     writeScore("You have halted " + score + " blocks");
     clearInstructions();
-    writeInstructions("Stop all 4 boxes!");
-    writeInstructions("");
+    writeInstructions("Align all 4 boxes to win!\n");
     writeInstructions("VR: Trigger controller");
     writeInstructions("near each box to stop it.\n");
     writeInstructions("Non-VR: Click each");
-    writeInstructions("box to stop it.\n");
-    writeInstructions("Align all 4 to win!");
+    writeInstructions("box to stop it.");
     instructionsBrd.updateTexture();
 
     var rightController = user.getController(0);
