@@ -69,17 +69,15 @@ export class movingBlocks extends THREE.Group {
     scoreBoard.scale.set(1 / scaleX, 1 / scaleY, 1 / scaleZ);
     this.add(scoreBoard);
     writeScore("You have halted " + score + " blocks");
-    //Writing game directions to instruction board
-    writeInstructions("Help expedite delivery!\n");
-    writeInstructions("Web Instructions: To stop");
-    writeInstructions("the boxes, use Quest tool");
-    writeInstructions("'rotate' function to move");
-    writeInstructions("controller\n");
-    writeInstructions("If all blocks end up");
-    writeInstructions("aligned, You Win!\n");
-    writeInstructions("NOTE: Please use Oculus");
-    writeInstructions("Quest in Imagine Lab\n");
-    //writeInstructions("Score: " + score);
+    clearInstructions();
+    writeInstructions("Stop all 4 boxes!");
+    writeInstructions("");
+    writeInstructions("VR: Trigger controller");
+    writeInstructions("near each box to stop it.\n");
+    writeInstructions("Non-VR: Click each");
+    writeInstructions("box to stop it.\n");
+    writeInstructions("Align all 4 to win!");
+    instructionsBrd.updateTexture();
 
     var rightController = user.getController(0);
     var leftController = user.getController(1);
@@ -482,6 +480,10 @@ export class movingBlocks extends THREE.Group {
 
 // Writes msg to all active DebugConsoles.  Scrolls if lines more than
 // NUM_LINES.  Overlong lines are cropped when displayed.
+function clearInstructions(){
+    debugOutput = "";
+}
+
 export function writeInstructions(msg){
     debugOutput += msg + "\n";
 
