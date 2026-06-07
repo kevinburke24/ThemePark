@@ -35,6 +35,10 @@ var previewOrbit = {
     lastY: 0,
 };
 
+// Ordered list of platforms for ◀ ▶ navigation; populated after scene init.
+var allPlatforms = [];
+var currentPlatformIndex = -1;
+
 function initMovingBlocks(userRig)
 {
   // Left exhibit replaced by high striker
@@ -558,9 +562,23 @@ function init() {
     // Create the contents of the room.
     initExhibits(userRig);
 
+    // Collect all stationary UserPlatform instances (excludes Saucer subclass)
+    // sorted left-to-right by world x so ◀ ▶ navigation feels spatial.
+    scene.traverse(function(obj) {
+        if (obj.constructor === USER.UserPlatform) allPlatforms.push(obj);
+    });
+    allPlatforms.sort(function(a, b) {
+        var wa = new THREE.Vector3(); a.getWorldPosition(wa);
+        var wb = new THREE.Vector3(); b.getWorldPosition(wb);
+        return wa.x - wb.x;
+    });
+
     // When a platform is clicked in non-VR mode, orbit to a standing view
     // facing the exhibit rather than teleporting the VR rig.
     USER.setPreviewPlatformHandler(function(platform) {
+        var idx = allPlatforms.indexOf(platform);
+        if (idx !== -1) currentPlatformIndex = idx;
+
         var worldPos = new THREE.Vector3();
         platform.getWorldPosition(worldPos);
 
@@ -611,6 +629,48 @@ function init() {
     document.body.appendChild(previewHint);
     renderer.xr.addEventListener('sessionstart', function () { previewHint.style.display = 'none'; });
     renderer.xr.addEventListener('sessionend',   function () { previewHint.style.display = ''; });
+
+    // Platform navigation buttons — cycle through exhibits/rides left-to-right.
+    var _navBtnBase =
+        'position:fixed;top:50%;transform:translateY(-50%);z-index:100;' +
+        'padding:10px 16px;font-size:28px;line-height:1;' +
+        'background:rgba(0,0,40,0.75);color:#fff;border:2px solid #4488ff;' +
+        'border-radius:8px;cursor:pointer;user-select:none;';
+
+    var prevPlatBtn = document.createElement('button');
+    prevPlatBtn.textContent = '◀';
+    prevPlatBtn.title = 'Previous platform';
+    prevPlatBtn.style.cssText = _navBtnBase + 'left:16px;';
+    prevPlatBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (!allPlatforms.length) return;
+        if (currentPlatformIndex < 0) currentPlatformIndex = 0;
+        currentPlatformIndex = (currentPlatformIndex - 1 + allPlatforms.length) % allPlatforms.length;
+        allPlatforms[currentPlatformIndex].collide(null, null);
+    });
+
+    var nextPlatBtn = document.createElement('button');
+    nextPlatBtn.textContent = '▶';
+    nextPlatBtn.title = 'Next platform';
+    nextPlatBtn.style.cssText = _navBtnBase + 'right:16px;';
+    nextPlatBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (!allPlatforms.length) return;
+        if (currentPlatformIndex < 0) currentPlatformIndex = 0;
+        currentPlatformIndex = (currentPlatformIndex + 1) % allPlatforms.length;
+        allPlatforms[currentPlatformIndex].collide(null, null);
+    });
+
+    document.body.appendChild(prevPlatBtn);
+    document.body.appendChild(nextPlatBtn);
+    renderer.xr.addEventListener('sessionstart', function () {
+        prevPlatBtn.style.display = 'none';
+        nextPlatBtn.style.display = 'none';
+    });
+    renderer.xr.addEventListener('sessionend', function () {
+        prevPlatBtn.style.display = '';
+        nextPlatBtn.style.display = '';
+    });
 
     // Set initial preview camera position.
     updatePreviewCamera();
