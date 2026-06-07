@@ -579,6 +579,14 @@ function init() {
         var idx = allPlatforms.indexOf(platform);
         if (idx !== -1) currentPlatformIndex = idx;
 
+        // If the userRig is still parented to a moving ride (e.g. a Saucer),
+        // detach it and reset transforms so orbit camera math is in world space.
+        if (userRig.parent !== scene) {
+            scene.add(userRig);
+            userRig.position.set(0, 0, 0);
+            userRig.rotation.set(0, 0, 0);
+        }
+
         var worldPos = new THREE.Vector3();
         platform.getWorldPosition(worldPos);
 
