@@ -5,9 +5,10 @@ import * as USER from './User.js';
 const TOWER_HEIGHT = 8;
 const TOWER_Z = -4;
 
-// A momentary click button for use with the GuiVR raycasting system.
+// A press-and-release button for use with the GuiVR raycasting system.
+// onPress fires on mousedown, onRelease fires on mouseup (no drag), onCancel on drag.
 class ActionButton extends GUIVR.GuiVR {
-    constructor(label, onClick) {
+    constructor(label, onPress, onRelease, onCancel) {
         super();
         var ctx = document.createElement('canvas').getContext('2d');
         ctx.canvas.width = 256;
@@ -29,9 +30,14 @@ class ActionButton extends GUIVR.GuiVR {
         );
         this.add(mesh);
         this.collider = mesh;
-        this._onClick = onClick;
+        this._onPress   = onPress;
+        this._onRelease = onRelease;
+        this._onCancel  = onCancel;
     }
-    collide() { this._onClick(); }
+    press()   { if (this._onPress)   this._onPress(); }
+    release() { if (this._onRelease) this._onRelease(); }
+    cancel()  { if (this._onCancel)  this._onCancel(); }
+    collide() {} // handled via press/release
 }
 
 export class HighStriker extends THREE.Group {
@@ -199,7 +205,7 @@ export class HighStriker extends THREE.Group {
             new THREE.PlaneBufferGeometry(2.2, 1.65),
             new THREE.MeshBasicMaterial({map: sbTexture, side: THREE.DoubleSide})
         );
-        sbMesh.position.set(-1.8, 3.2, TOWER_Z);
+        sbMesh.position.set(-1.8, 2.2, TOWER_Z + 2);
         this.add(sbMesh);
 
         var bestScore = 0;
@@ -228,18 +234,60 @@ export class HighStriker extends THREE.Group {
             }
             sbTexture.needsUpdate = true;
         }
-        updateScoreBoard(0, 'Click SWING!');
+        updateScoreBoard(0, 'Hold SWING!');
 
-        // ---- Controls ----
-        var powerLevel = 60;
-        var powerBtn = new GUIVR.GuiVRButton('Power', 60, 10, 100, true, function(x) {
-            powerLevel = x;
-        });
-        var menu = new GUIVR.GuiVRMenu([powerBtn]);
-        menu.position.set(-1.5, 1.3, TOWER_Z + 2);
-        this.add(menu);
+        // ---- Power bar ----
+        var pbCanvas = document.createElement('canvas');
+        pbCanvas.width = 128;
+        pbCanvas.height = 256; // power-of-2 to avoid THREE.js texture resize
+        var pbCtx = pbCanvas.getContext('2d');
+        var pbTexture = new THREE.CanvasTexture(pbCanvas);
+        var pbMesh = new THREE.Mesh(
+            new THREE.PlaneBufferGeometry(0.55, 1.1),
+            new THREE.MeshBasicMaterial({map: pbTexture, side: THREE.DoubleSide})
+        );
+        pbMesh.position.set(-0.8, 1.5, TOWER_Z + 2);
+        this.add(pbMesh);
 
-        // Animation state - declared before ActionButton closure that references them
+        function updatePowerBar(power) {
+            var w = 128, h = 256;
+            pbCtx.fillStyle = '#0a0a1a';
+            pbCtx.fillRect(0, 0, w, h);
+
+            pbCtx.fillStyle = '#ffdd00';
+            pbCtx.font = 'bold 17px Arial';
+            pbCtx.textAlign = 'center';
+            pbCtx.fillText('POWER', 50, 16);
+
+            var barX = 10, barY = 24, barW = 52, barH = 216;
+            pbCtx.fillStyle = '#222';
+            pbCtx.fillRect(barX, barY, barW, barH);
+
+            var pct = power / 1000;
+            if (pct > 0) {
+                var fillH = Math.round(pct * barH);
+                var grad = pbCtx.createLinearGradient(0, barY + barH, 0, barY);
+                grad.addColorStop(0,   '#00cc00');
+                grad.addColorStop(0.5, '#ffff00');
+                grad.addColorStop(1,   '#ff2200');
+                pbCtx.fillStyle = grad;
+                pbCtx.fillRect(barX, barY + barH - fillH, barW, fillH);
+            }
+
+            pbCtx.strokeStyle = '#888888';
+            pbCtx.lineWidth = 2;
+            pbCtx.strokeRect(barX, barY, barW, barH);
+
+            pbCtx.fillStyle = '#ffffff';
+            pbCtx.font = 'bold 24px Arial';
+            pbCtx.textAlign = 'left';
+            pbCtx.fillText(Math.round(power), 70, 140);
+
+            pbTexture.needsUpdate = true;
+        }
+        updatePowerBar(0);
+
+        // Animation state
         var swingPhase = 'rest'; // 'rest' | 'striking' | 'returning'
         var puckVel = 0;
         var puckY = 0.1;
@@ -249,13 +297,37 @@ export class HighStriker extends THREE.Group {
         var bellFlash = 0;
         var animT = 0;
 
-        var swingBtn = new ActionButton('SWING!', function() {
-            if (swingPhase === 'rest') {
-                swingPhase = 'striking';
-                maxPuckY = 0.1;
-                currentScore = 0;
+        var isPressing = false;
+        var fluctuatingPower = 0;
+        var capturedPower = 0;
+        var wasSuccessful = false;
+
+        var swingBtn = new ActionButton('SWING!',
+            function() { // onPress
+                if (swingPhase === 'rest') {
+                    isPressing = true;
+                    updateScoreBoard(currentScore, 'Release!');
+                }
+            },
+            function() { // onRelease
+                if (isPressing && swingPhase === 'rest') {
+                    isPressing = false;
+                    capturedPower = fluctuatingPower;
+                    fluctuatingPower = 0;
+                    updatePowerBar(0);
+                    swingPhase = 'striking';
+                    maxPuckY = 0.1;
+                    currentScore = 0;
+                    wasSuccessful = false;
+                }
+            },
+            function() { // onCancel (drag while holding)
+                isPressing = false;
+                fluctuatingPower = 0;
+                updatePowerBar(0);
+                updateScoreBoard(currentScore, 'Hold SWING!');
             }
-        });
+        );
         swingBtn.position.set(0.5, 1.3, TOWER_Z + 2);
         this.add(swingBtn);
 
@@ -268,12 +340,19 @@ export class HighStriker extends THREE.Group {
         this.setAnimation(function(dt) {
             animT += dt;
 
+            // Power fluctuation while holding SWING
+            if (isPressing) {
+                // 1.5s per sweep: animT grows at 6/s, so ω = 2π/(1.5×6) = 2π/9
+                fluctuatingPower = (Math.sin(animT * 2 * Math.PI / 9) + 1) / 2 * 1000;
+                updatePowerBar(fluctuatingPower);
+            }
+
             // Hammer swing
             if (swingPhase === 'striking') {
                 swingAngle += SWING_SPEED * dt;
                 if (swingAngle >= STRIKE_ANGLE) {
                     swingAngle = STRIKE_ANGLE;
-                    puckVel = powerLevel * 0.005; // max power 100 → v0=0.5, reaches ~7.8 units
+                    puckVel = capturedPower * 0.0005; // 1000 → v0=0.5
                     swingPhase = 'returning';
                 }
                 hammerPivot.rotation.z = swingAngle;
@@ -299,6 +378,7 @@ export class HighStriker extends THREE.Group {
                     puckVel = 0;
                     currentScore = 1000;
                     if (1000 > bestScore) bestScore = 1000;
+                    wasSuccessful = true;
                     bellFlash = 3.0;
                     updateScoreBoard(1000, 'DING! DING!');
                 }
@@ -313,8 +393,14 @@ export class HighStriker extends THREE.Group {
                                 (maxPuckY / (TOWER_HEIGHT - 0.15)) * 1000
                             ));
                             if (currentScore > bestScore) bestScore = currentScore;
-                            var msg = currentScore >= 900 ? 'SO CLOSE!' : '';
-                            updateScoreBoard(currentScore, msg);
+                            if (currentScore >= 970) {
+                                wasSuccessful = true;
+                                bellFlash = 3.0;
+                                updateScoreBoard(currentScore, 'DING! DING!');
+                            } else {
+                                var msg = currentScore >= 900 ? 'SO CLOSE!' : 'Hold SWING!';
+                                updateScoreBoard(currentScore, msg);
+                            }
                         }
                     }
                 }
@@ -334,19 +420,25 @@ export class HighStriker extends THREE.Group {
                 }
             }
 
-            // Margin lights: chasing pulse, plus white fill up to puck height
+            // Margin lights
             for (var k = 0; k < lightMeshes.length; k++) {
                 var lm = lightMeshes[k];
-                if (lm.height <= puckY) {
-                    // Puck has passed this light — show white
-                    lm.mesh.material.color.setHex(0xffffff);
-                } else {
-                    // Idle chasing animation
+                if (wasSuccessful) {
+                    // Success celebration: chasing pulse until next swing
                     var phase = (animT * 2.5 + k * 0.35) % (2 * Math.PI);
                     var bright = (Math.sin(phase) + 1) / 2 * 0.85 + 0.15;
                     var r = ((lm.baseColor >> 16) & 0xff) * bright;
                     var g = ((lm.baseColor >> 8)  & 0xff) * bright;
                     var b =  (lm.baseColor & 0xff) * bright;
+                    lm.mesh.material.color.setRGB(r / 255, g / 255, b / 255);
+                } else if (puckY > 0.1 && lm.height <= puckY) {
+                    // Puck has passed this light — show white
+                    lm.mesh.material.color.setHex(0xffffff);
+                } else {
+                    // Static base color — no pulsing
+                    var r = (lm.baseColor >> 16) & 0xff;
+                    var g = (lm.baseColor >> 8)  & 0xff;
+                    var b =  lm.baseColor & 0xff;
                     lm.mesh.material.color.setRGB(r / 255, g / 255, b / 255);
                 }
             }

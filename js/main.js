@@ -442,6 +442,14 @@ function onPreviewMouseDown(event) {
     previewOrbit.startY = event.clientY;
     previewOrbit.lastX = event.clientX;
     previewOrbit.lastY = event.clientY;
+
+    var mouse = new THREE.Vector2(
+        (event.clientX / window.innerWidth) * 2 - 1,
+        -(event.clientY / window.innerHeight) * 2 + 1
+    );
+    var raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    GUIVR.intersectObjectsDown(raycaster);
 }
 
 function onPreviewMouseMove(event) {
@@ -465,6 +473,7 @@ function onPreviewMouseMove(event) {
 }
 
 function onPreviewMouseUp() {
+    GUIVR.intersectObjectsUp(previewOrbit.didDrag);
     previewOrbit.isDragging = false;
 }
 

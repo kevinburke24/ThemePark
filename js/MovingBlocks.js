@@ -53,18 +53,18 @@ export class movingBlocks extends THREE.Group {
     //Set up instructions board
     var instructionsBrd = new InstructionsBoard(2.5);
     debugConsoles.push(instructionsBrd);
-    instructionsBrd.rotateX(THREE.Math.degToRad(10));
-    instructionsBrd.position.x = 0;
-    instructionsBrd.position.y = 4;
-    instructionsBrd.position.z = -4;
+    // Compensate for group scale so boards appear at consistent world-space
+    // size and position regardless of per-instance scale (x/scaleX cancels
+    // out when multiplied by group scale, giving a fixed world offset).
+    instructionsBrd.position.set(0, 2.0 / scaleY, -3.0 / scaleZ);
+    instructionsBrd.scale.set(1 / scaleX, 1 / scaleY, 1 / scaleZ);
     this.add(instructionsBrd);
 
     var scoreBoard = new ScoreBoard(1.5);
     debugConsoles.push(scoreBoard);
     scoreBoard.rotateX(THREE.Math.degToRad(10));
-    scoreBoard.position.x = 3;
-    scoreBoard.position.y = 4;
-    scoreBoard.position.z = -3.5;
+    scoreBoard.position.set(3.0 / scaleX, 2.0 / scaleY, -3.0 / scaleZ);
+    scoreBoard.scale.set(1 / scaleX, 1 / scaleY, 1 / scaleZ);
     this.add(scoreBoard);
     writeScore("You have halted " + score + " blocks");
     //Writing game directions to instruction board

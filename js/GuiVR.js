@@ -6,6 +6,41 @@ import * as THREE from '../extern/build/three.module.js';
 // List of active gui_elements to test interaction against.
 const guiElements = [];
 
+var _pressedElement = null;
+
+
+// Takes a THREE.Raycaster and calls press() on the first GuiVR element hit.
+// Tracks which element was pressed for the matching intersectObjectsUp call.
+export function intersectObjectsDown(raycaster) {
+    var colliders = [];
+    for (var i = 0; i < guiElements.length; i++) {
+        if (guiElements[i].collider) colliders.push(guiElements[i].collider);
+    }
+    var intersections = raycaster.intersectObjects(colliders);
+    if (intersections.length > 0) {
+        var object = intersections[0].object;
+        for (var i = 0; i < guiElements.length; i++) {
+            if (guiElements[i].collider === object) {
+                _pressedElement = guiElements[i];
+                guiElements[i].press();
+                return guiElements[i];
+            }
+        }
+    }
+}
+
+// Completes a press started by intersectObjectsDown.
+// wasDrag: if true, cancel the press without triggering the action.
+export function intersectObjectsUp(wasDrag) {
+    if (_pressedElement) {
+        if (wasDrag) {
+            _pressedElement.cancel();
+        } else {
+            _pressedElement.release();
+        }
+        _pressedElement = null;
+    }
+}
 
 // Takes a THREE.Raycaster and determines the first GuiVR element that
 // intersets with the ray.  The collide function of that element is
@@ -35,7 +70,7 @@ export function intersectObjects(raycaster){
 }
 
 
-// Abstract class for GuiVR 
+// Abstract class for GuiVR
 export class GuiVR extends THREE.Group {
 
     constructor(){
@@ -46,7 +81,11 @@ export class GuiVR extends THREE.Group {
 	this.collider = undefined;
 	guiElements.push(this);
     }
-    
+
+    press() {}
+    release() {}
+    cancel() {}
+
 }
 
 const epsilon = 0.03;
