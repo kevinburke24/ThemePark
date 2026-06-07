@@ -331,6 +331,32 @@ export class HighStriker extends THREE.Group {
         swingBtn.position.set(0.5, 1.3, TOWER_Z + 2);
         this.add(swingBtn);
 
+        // ---- Instruction sign ----
+        var instrCanvas = document.createElement('canvas');
+        instrCanvas.width = 512;
+        instrCanvas.height = 64;
+        var instrCtx = instrCanvas.getContext('2d');
+        instrCtx.fillStyle = '#222244';
+        instrCtx.fillRect(0, 0, 512, 64);
+        instrCtx.strokeStyle = '#4488ff';
+        instrCtx.lineWidth = 2;
+        instrCtx.strokeRect(2, 2, 508, 60);
+        instrCtx.fillStyle = '#ffffff';
+        instrCtx.font = '17px Arial';
+        instrCtx.textAlign = 'center';
+        instrCtx.textBaseline = 'middle';
+        instrCtx.fillText('Hold down to increase & reduce power,', 256, 22);
+        instrCtx.fillText('release to strike!', 256, 44);
+        var instrMesh = new THREE.Mesh(
+            new THREE.PlaneBufferGeometry(3.2, 0.4),
+            new THREE.MeshBasicMaterial({
+                map: new THREE.CanvasTexture(instrCanvas),
+                side: THREE.DoubleSide
+            })
+        );
+        instrMesh.position.set(-0.5, 0.65, TOWER_Z + 2);
+        this.add(instrMesh);
+
         // ---- Main animation ----
         var GRAVITY     = 0.016;
         var SWING_SPEED = 3.0;
