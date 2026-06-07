@@ -465,14 +465,7 @@ export class Saucer extends USER.UserPlatform {
   }
 
   collide(uv, pt){
-	// In non-VR mode let the parent class handle it: it will call
-	// previewPlatformHandler so the orbit camera snaps to this saucer
-	// without physically reparenting (and thus spinning) the userRig.
-	if (this.userRig.xr && !this.userRig.xr.isPresenting()) {
-	    super.collide(uv, pt);
-	    return;
-	}
-	// In VR mode, move the user rig onto the saucer.
+	// When the user clicks on this platform, move the user to it.
 	this.add(this.userRig);
   }
 
